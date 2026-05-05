@@ -3,7 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <title>Ziggzaggs Tattoo</title>
+<button onclick="adminMode()">Admin</button>
+  function adminMode() {
+  const pass = prompt("Enter admin password");
 
+  if (pass !== "zigg123") return alert("Wrong password");
+
+  const date = prompt("Enter date (YYYY-MM-DD)");
+  const time = prompt("Enter time (e.g. 2:00)");
+
+  db.collection("availability").add({
+    date: date,
+    time: time,
+    taken: false
+  });
+
+  alert("Slot added!");
+}
 <style>
   body {
     margin: 0;
@@ -71,6 +87,26 @@
     color: gray;
     cursor: not-allowed;
   }
+  #calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin: 20px 0;
+}
+
+.day {
+  padding: 10px;
+  background: #111;
+  cursor: pointer;
+}
+
+.day:hover {
+  background: #333;
+}
+
+.selected {
+  background: #555;
+}
 </style>
 </head>
 
@@ -96,13 +132,11 @@
   <h2>Book Appointment</h2>
 
   <input id="name" placeholder="Your Name">
-
   <select id="artist">
     <option value="Zigg">Zigg (Main Artist)</option>
   </select>
 
-  <input type="date" id="date">
-
+  <div id="calendar-grid"></div>
   <div id="slots"></div>
 </div>
 
@@ -110,28 +144,43 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDeFdpAbImjOBskmax06mPFQOil1m3isZw",
-    authDomain: "ziggzaggs-booking.firebaseapp.com",
-    projectId: "ziggzaggs-booking"
-  };
-
-  firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-
+  const calendarGrid = document.getElementById("calendar-grid");
   const slotsDiv = document.getElementById("slots");
-  const dateInput = document.getElementById("date");
 
-  dateInput.addEventListener("change", loadSlots);
+  let selectedDate = "";
+
+  function generateCalendar() {
+    calendarGrid.innerHTML = "";
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;
+
+      const div = document.createElement("div");
+      div.className = "day";
+      div.innerText = i;
+
+      div.onclick = () => {
+        selectedDate = dateStr;
+        document.querySelectorAll(".day").forEach(d => d.classList.remove("selected"));
+        div.classList.add("selected");
+        loadSlots();
+      };
+
+      calendarGrid.appendChild(div);
+    }
+  }
 
   async function loadSlots() {
     slotsDiv.innerHTML = "";
 
-    const selectedDate = dateInput.value;
-    if (!selectedDate) return;
-
-    const snapshot = await db
-      .collection("availability")
+    const snapshot = await db.collection("availability")
       .where("date", "==", selectedDate)
       .get();
 
@@ -149,30 +198,41 @@
           const name = document.getElementById("name").value;
           const artist = document.getElementById("artist").value;
 
-          if (!name) {
-            alert("Enter your name");
-            return;
-          }
+          if (!name) return alert("Enter name");
 
           await db.collection("bookings").add({
-            name: name,
-            artist: artist,
-            date: selectedDate,
-            time: data.time
+            name, artist, date: selectedDate, time: data.time
           });
 
           await db.collection("availability").doc(doc.id).update({
             taken: true
           });
 
-          alert("Appointment booked!");
-          loadSlots();
+          alert("Booked! Please confirm via email.");
+
+window.location.href = `mailto:oekkojmo@gmail.com?subject=Tattoo Booking&body=Name: ${name}%0D%0ADate: ${selectedDate}%0D%0ATime: ${data.time}`;
         };
       }
 
       slotsDiv.appendChild(btn);
     });
   }
+  @media (max-width: 600px) {
+  input, select {
+    width: 95%;
+  }
+
+  #calendar {
+    padding: 10px;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+
+  generateCalendar();
+</script>
 
   // Flash toggle
   const flashSaleActive = true;
