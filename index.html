@@ -94,8 +94,6 @@ button:disabled {
   <div>ZIGGZAGGS TATTOO</div>
 </header>
 
-<button onclick="adminMode()">Admin</button>
-
 <div id="flash-sale">
   <h2>🔥 Flash Sale</h2>
   <div id="flash-gallery">
@@ -143,7 +141,7 @@ const slotsDiv = document.getElementById("slots");
 
 let selectedDate = "";
 
-// Calendar
+// Generate calendar
 function generateCalendar() {
   calendarGrid.innerHTML = "";
 
@@ -171,31 +169,41 @@ function generateCalendar() {
   }
 }
 
-// Load slots
+// Load slots (AUTO GENERATED TIMES)
 async function loadSlots() {
   slotsDiv.innerHTML = "";
 
-  const snapshot = await db.collection("availability")
+  if (!selectedDate) return;
+
+  // Default hours (8AM–8PM)
+  const times = [];
+  for (let i = 8; i <= 20; i++) {
+    times.push(`${i}:00`);
+  }
+
+  // Get bookings for that date
+  const snapshot = await db.collection("bookings")
     .where("date", "==", selectedDate)
     .get();
 
-  if (snapshot.empty) {
-    slotsDiv.innerHTML = "<p>No available times</p>";
-    return;
-  }
+  let booked = [];
 
-  let slots = [];
   snapshot.forEach(doc => {
-    slots.push({ id: doc.id, ...doc.data() });
+    const data = doc.data();
+    const start = parseInt(data.time);
+    const duration = data.duration || 1;
+
+    for (let i = 0; i < duration; i++) {
+      booked.push(`${start + i}:00`);
+    }
   });
 
-  slots.sort((a,b)=>a.time.localeCompare(b.time));
-
-  slots.forEach((data, index) => {
+  // Build buttons
+  times.forEach(time => {
     const btn = document.createElement("button");
-    btn.innerText = data.time;
+    btn.innerText = time;
 
-    if (data.taken) {
+    if (booked.includes(time)) {
       btn.disabled = true;
       btn.innerText += " (Booked)";
     } else {
@@ -204,25 +212,29 @@ async function loadSlots() {
         const artist = document.getElementById("artist").value;
         const duration = parseInt(document.getElementById("duration").value);
 
-        if (!name) return alert("Enter name");
+        if (!name) return alert("Enter your name");
 
-        const required = slots.slice(index, index + duration);
+        const startHour = parseInt(time);
 
-        if (required.length < duration || required.some(s => s.taken)) {
-          return alert("Not enough time available");
+        // Check availability for full duration
+        for (let i = 0; i < duration; i++) {
+          if (booked.includes(`${startHour + i}:00`)) {
+            return alert("That time range is not available");
+          }
         }
 
         await db.collection("bookings").add({
-          name, artist, date: selectedDate, time: data.time, duration
+          name,
+          artist,
+          date: selectedDate,
+          time: time,
+          duration: duration
         });
-
-        for (const slot of required) {
-          await db.collection("availability").doc(slot.id).update({ taken: true });
-        }
 
         alert("Booked!");
 
-        window.location.href = `mailto:oekkojmo@gmail.com?subject=Tattoo Booking&body=Name:${name}%0D%0ADate:${selectedDate}%0D%0ATime:${data.time}%0D%0ADuration:${duration}hr`;
+        window.location.href =
+          `mailto:oekkojmo@gmail.com?subject=Tattoo Booking&body=Name:${name}%0D%0ADate:${selectedDate}%0D%0ATime:${time}%0D%0ADuration:${duration}hr`;
 
         loadSlots();
       };
@@ -232,24 +244,10 @@ async function loadSlots() {
   });
 }
 
-// Admin
-function adminMode() {
-  const pass = prompt("Enter admin password");
-  if (pass !== "zigg123") return alert("Wrong password");
-
-  const date = prompt("Date (YYYY-MM-DD)");
-  const time = prompt("Time (e.g. 2:00)");
-
-  db.collection("availability").add({
-    date, time, taken: false
-  });
-
-  alert("Slot added!");
-}
-
+// Run calendar
 generateCalendar();
 
-// Flash toggle
+// Flash sale toggle
 document.getElementById("flash-sale").style.display = "block";
 </script>
 
