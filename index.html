@@ -87,13 +87,23 @@
         btn.style.background = "#333";
         btn.innerText = time + " (Booked)";
       } else {
-        btn.onclick = async () => {
-          await db.collection("bookings").add({
-            time: time,
-            created: new Date()
-          });
-          alert("Booked " + time);
-          location.reload(); // refresh to update UI
+       btn.onclick = async () => {
+  const nameInput = document.getElementById("name").value;
+
+  if (!nameInput) {
+    alert("Please enter your name first");
+    return;
+  }
+
+  await db.collection("bookings").add({
+    time: time,
+    name: nameInput,
+    created: new Date()
+  });
+
+  alert("Booked " + time + " for " + nameInput);
+  location.reload();
+};
         };
       }
 
@@ -106,8 +116,19 @@
 <body>
 
 <header>
-  <img src="logo.png" alt="Ziggzaggs Tattoo Logo" style="width:120px; display:block; margin:0 auto;">
-  <div style="margin-top:10px; font-size:1.5rem;">ZIGGZAGGS TATTOO</div>
+<header style="text-align:center; padding:20px; border-bottom:1px solid #333;">
+
+  <a href="https://www.instagram.com/ziggzaggstattoo/" target="_blank">
+    <img 
+      src="logo.png" 
+      alt="Ziggzaggs Tattoo Logo" 
+      style="width:120px; display:block; margin:0 auto; cursor:pointer;"
+    >
+  </a>
+
+  <div style="margin-top:10px; font-size:1.5rem;">
+    ZIGGZAGGS TATTOO
+  </div>
 </header>
 
 <div id="flash-sale">
@@ -115,7 +136,15 @@
 </div>
 
 <div id="calendar">
-  📅 Booking Calendar Coming Soon
+  <h2>Book an Appointment</h2>
+
+  <input 
+    id="name" 
+    placeholder="Your Name" 
+    style="padding:10px; margin-bottom:15px; width:200px;"
+  >
+
+  <div id="slots"></div>
 </div>
 
 <div class="artists">
