@@ -1,59 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Ziggzaggs Tattoo</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0d0d0d;
-      color: white;
-    }
+<meta charset="UTF-8">
+<title>Ziggzaggs Tattoo</title>
 
-    header {
-      text-align: center;
-      padding: 20px;
-      font-size: 2rem;
-      border-bottom: 1px solid #333;
-    }
+<style>
+  body {
+    margin: 0;
+    font-family: Arial;
+    background: #0d0d0d;
+    color: white;
+    text-align: center;
+  }
 
-    #flash-sale {
-      display: none;
-      background: red;
-      text-align: center;
-      padding: 10px;
-      font-weight: bold;
-    }
+  header {
+    padding: 20px;
+    border-bottom: 1px solid #333;
+  }
 
-    #calendar {
-      margin: 40px auto;
-      width: 90%;
-      max-width: 600px;
-      border: 1px solid #444;
-      padding: 20px;
-      text-align: center;
-    }
+  header img {
+    width: 120px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
 
-    .artists {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin: 40px;
-    }
+  header img:hover {
+    transform: scale(1.05);
+  }
 
-    .artist {
-      border: 1px solid #444;
-      padding: 20px;
-      cursor: pointer;
-    }
-  </style>
+  #flash-sale {
+    display: none;
+    padding: 20px;
+  }
+
+  #flash-gallery img {
+    width: 150px;
+    margin: 10px;
+    border: 2px solid #333;
+  }
+
+  #calendar {
+    margin: 40px auto;
+    width: 90%;
+    max-width: 500px;
+    border: 1px solid #333;
+    padding: 20px;
+  }
+
+  input, select {
+    padding: 10px;
+    margin: 10px;
+    width: 80%;
+  }
+
+  button {
+    padding: 10px 15px;
+    margin: 8px;
+    cursor: pointer;
+    border: none;
+    background: #222;
+    color: white;
+  }
+
+  button:hover {
+    background: #444;
+  }
+
+  button:disabled {
+    background: #111;
+    color: gray;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <a href="https://www.instagram.com/ziggzaggstattoo/" target="_blank">
+    <img src="logo.png">
+  </a>
+  <div>ZIGGZAGGS TATTOO</div>
+</header>
+
+<div id="flash-sale">
+  <h2>🔥 Flash Sale</h2>
+  <div id="flash-gallery">
+    <img src="flash1.jpg">
+    <img src="flash2.jpg">
+    <img src="flash3.jpg">
+  </div>
+</div>
+
 <div id="calendar">
-  <h2>Book an Appointment</h2>
+  <h2>Book Appointment</h2>
+
+  <input id="name" placeholder="Your Name">
+
+  <select id="artist">
+    <option value="Zigg">Zigg (Main Artist)</option>
+  </select>
+
+  <input type="date" id="date">
+
   <div id="slots"></div>
 </div>
 
-</head>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -61,49 +113,60 @@
   const firebaseConfig = {
     apiKey: "AIzaSyDeFdpAbImjOBskmax06mPFQOil1m3isZw",
     authDomain: "ziggzaggs-booking.firebaseapp.com",
-    projectId: "ziggzaggs-booking",
-    storageBucket: "ziggzaggs-booking.firebasestorage.app",
-    messagingSenderId: "234591242411",
-    appId: "1:234591242411:web:0048681176d247b2a48fee"
+    projectId: "ziggzaggs-booking"
   };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
   const slotsDiv = document.getElementById("slots");
-  const times = ["12:00", "1:00", "2:00", "3:00", "4:00"];
+  const dateInput = document.getElementById("date");
+
+  dateInput.addEventListener("change", loadSlots);
 
   async function loadSlots() {
-    const snapshot = await db.collection("bookings").get();
-    const bookedTimes = snapshot.docs.map(doc => doc.data().time);
+    slotsDiv.innerHTML = "";
 
-    times.forEach(time => {
+    const selectedDate = dateInput.value;
+    if (!selectedDate) return;
+
+    const snapshot = await db
+      .collection("availability")
+      .where("date", "==", selectedDate)
+      .get();
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+
       const btn = document.createElement("button");
-      btn.innerText = time;
-      btn.style.margin = "10px";
+      btn.innerText = data.time;
 
-      if (bookedTimes.includes(time)) {
+      if (data.taken) {
         btn.disabled = true;
-        btn.style.background = "#333";
-        btn.innerText = time + " (Booked)";
+        btn.innerText += " (Booked)";
       } else {
-       btn.onclick = async () => {
-  const nameInput = document.getElementById("name").value;
+        btn.onclick = async () => {
+          const name = document.getElementById("name").value;
+          const artist = document.getElementById("artist").value;
 
-  if (!nameInput) {
-    alert("Please enter your name first");
-    return;
-  }
+          if (!name) {
+            alert("Enter your name");
+            return;
+          }
 
-  await db.collection("bookings").add({
-    time: time,
-    name: nameInput,
-    created: new Date()
-  });
+          await db.collection("bookings").add({
+            name: name,
+            artist: artist,
+            date: selectedDate,
+            time: data.time
+          });
 
-  alert("Booked " + time + " for " + nameInput);
-  location.reload();
-};
+          await db.collection("availability").doc(doc.id).update({
+            taken: true
+          });
+
+          alert("Appointment booked!");
+          loadSlots();
         };
       }
 
@@ -111,52 +174,8 @@
     });
   }
 
-  loadSlots();
-</script>
-<body>
-
-<header>
-<header style="text-align:center; padding:20px; border-bottom:1px solid #333;">
-
-  <a href="https://www.instagram.com/ziggzaggstattoo/" target="_blank">
-    <img 
-      src="logo.png" 
-      alt="Ziggzaggs Tattoo Logo" 
-      style="width:120px; display:block; margin:0 auto; cursor:pointer;"
-    >
-  </a>
-
-  <div style="margin-top:10px; font-size:1.5rem;">
-    ZIGGZAGGS TATTOO
-  </div>
-</header>
-
-<div id="flash-sale">
-  🔥 FLASH SALE TODAY – WALK INS WELCOME
-</div>
-
-<div id="calendar">
-  <h2>Book an Appointment</h2>
-
-  <input 
-    id="name" 
-    placeholder="Your Name" 
-    style="padding:10px; margin-bottom:15px; width:200px;"
-  >
-
-  <div id="slots"></div>
-</div>
-
-<div class="artists">
-  <div class="artist">Artist 1</div>
-  <div class="artist">Artist 2</div>
-  <div class="artist">Artist 3</div>
-</div>
-
-<script>
-  // Toggle flash sale (true = show, false = hide)
+  // Flash toggle
   const flashSaleActive = true;
-
   if (flashSaleActive) {
     document.getElementById("flash-sale").style.display = "block";
   }
