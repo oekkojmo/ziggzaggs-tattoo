@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ziggzaggs Tattoo</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0d0d0d;
+      color: white;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 2rem;
+      border-bottom: 1px solid #333;
+    }
+
+    #flash-sale {
+      display: none;
+      background: red;
+      text-align: center;
+      padding: 10px;
+      font-weight: bold;
+    }
+
+    #calendar {
+      margin: 40px auto;
+      width: 90%;
+      max-width: 600px;
+      border: 1px solid #444;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .artists {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 40px;
+    }
+
+    .artist {
+      border: 1px solid #444;
+      padding: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  ZIGGZAGGS TATTOO
+</header>
+
+<div id="flash-sale">
+  🔥 FLASH SALE TODAY – WALK INS WELCOME
+</div>
+
+<div id="calendar">
+  📅 Booking Calendar Coming Soon
+</div>
+
+<div class="artists">
+  <div class="artist">Artist 1</div>
+  <div class="artist">Artist 2</div>
+  <div class="artist">Artist 3</div>
+</div>
+
+<script>
+  // Toggle flash sale (true = show, false = hide)
+  const flashSaleActive = true;
+
+  if (flashSaleActive) {
+    document.getElementById("flash-sale").style.display = "block";
+  }
+</script>
+
+</body>
+</html>
