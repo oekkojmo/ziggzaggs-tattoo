@@ -48,8 +48,49 @@
       cursor: pointer;
     }
   </style>
-</head>
+<div id="calendar">
+  <h2>Book an Appointment</h2>
+  <div id="slots"></div>
+</div>
 
+</head>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeFdpAbImjOBskmax06mPFQOil1m3isZw",
+    authDomain: "ziggzaggs-booking.firebaseapp.com",
+    projectId: "ziggzaggs-booking",
+    storageBucket: "ziggzaggs-booking.firebasestorage.app",
+    messagingSenderId: "234591242411",
+    appId: "1:234591242411:web:0048681176d247b2a48fee"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const slotsDiv = document.getElementById("slots");
+
+  const times = ["12:00", "1:00", "2:00", "3:00", "4:00"];
+
+  times.forEach(time => {
+    const btn = document.createElement("button");
+    btn.innerText = time;
+    btn.style.margin = "10px";
+
+    btn.onclick = async () => {
+      await db.collection("bookings").add({
+        time: time,
+        created: new Date()
+      });
+      alert("Booked " + time);
+    };
+
+    slotsDiv.appendChild(btn);
+  });
+</script>
 <body>
 
 <header>
