@@ -3,91 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <title>Ziggzaggs Tattoo</title>
-<button onclick="adminMode()">Admin</button>
-  function adminMode() {
-  const pass = prompt("Enter admin password");
 
-  if (pass !== "zigg123") return alert("Wrong password");
-
-  const date = prompt("Enter date (YYYY-MM-DD)");
-  const time = prompt("Enter time (e.g. 2:00)");
-
-  db.collection("availability").add({
-    date: date,
-    time: time,
-    taken: false
-  });
-
-  alert("Slot added!");
-}
 <style>
-  body {
-    margin: 0;
-    font-family: Arial;
-    background: #0d0d0d;
-    color: white;
-    text-align: center;
-  }
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d0d0d;
+  color: white;
+  text-align: center;
+}
 
-  header {
-    padding: 20px;
-    border-bottom: 1px solid #333;
-  }
+header {
+  padding: 20px;
+  border-bottom: 1px solid #333;
+}
 
-  header img {
-    width: 120px;
-    cursor: pointer;
-    transition: 0.2s;
-  }
+header img {
+  width: 120px;
+  cursor: pointer;
+}
 
-  header img:hover {
-    transform: scale(1.05);
-  }
+#calendar {
+  margin: 40px auto;
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid #333;
+  padding: 20px;
+}
 
-  #flash-sale {
-    display: none;
-    padding: 20px;
-  }
+input, select {
+  padding: 10px;
+  margin: 10px;
+  width: 80%;
+}
 
-  #flash-gallery img {
-    width: 150px;
-    margin: 10px;
-    border: 2px solid #333;
-  }
+button {
+  padding: 10px;
+  margin: 6px;
+  background: #222;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
 
-  #calendar {
-    margin: 40px auto;
-    width: 90%;
-    max-width: 500px;
-    border: 1px solid #333;
-    padding: 20px;
-  }
+button:disabled {
+  background: #111;
+  color: gray;
+}
 
-  input, select {
-    padding: 10px;
-    margin: 10px;
-    width: 80%;
-  }
-
-  button {
-    padding: 10px 15px;
-    margin: 8px;
-    cursor: pointer;
-    border: none;
-    background: #222;
-    color: white;
-  }
-
-  button:hover {
-    background: #444;
-  }
-
-  button:disabled {
-    background: #111;
-    color: gray;
-    cursor: not-allowed;
-  }
-  #calendar-grid {
+#calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
@@ -100,12 +64,23 @@
   cursor: pointer;
 }
 
-.day:hover {
-  background: #333;
-}
-
 .selected {
   background: #555;
+}
+
+#flash-sale {
+  display: none;
+}
+
+#flash-gallery img {
+  width: 120px;
+  margin: 5px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  input, select { width: 95%; }
+  button { width: 100%; }
 }
 </style>
 </head>
@@ -118,6 +93,8 @@
   </a>
   <div>ZIGGZAGGS TATTOO</div>
 </header>
+
+<button onclick="adminMode()">Admin</button>
 
 <div id="flash-sale">
   <h2>🔥 Flash Sale</h2>
@@ -132,8 +109,16 @@
   <h2>Book Appointment</h2>
 
   <input id="name" placeholder="Your Name">
+
   <select id="artist">
     <option value="Zigg">Zigg (Main Artist)</option>
+  </select>
+
+  <select id="duration">
+    <option value="1">1 Hour</option>
+    <option value="2">2 Hours</option>
+    <option value="3">3 Hours</option>
+    <option value="4">4 Hours</option>
   </select>
 
   <div id="calendar-grid"></div>
@@ -144,101 +129,128 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
-  const db = firebase.firestore();
-  const calendarGrid = document.getElementById("calendar-grid");
-  const slotsDiv = document.getElementById("slots");
+const firebaseConfig = {
+  apiKey: "AIzaSyDeFdpAbImjOBskmax06mPFQOil1m3isZw",
+  authDomain: "ziggzaggs-booking.firebaseapp.com",
+  projectId: "ziggzaggs-booking"
+};
 
-  let selectedDate = "";
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  function generateCalendar() {
-    calendarGrid.innerHTML = "";
+const calendarGrid = document.getElementById("calendar-grid");
+const slotsDiv = document.getElementById("slots");
 
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+let selectedDate = "";
 
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+// Calendar
+function generateCalendar() {
+  calendarGrid.innerHTML = "";
 
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
 
-      const div = document.createElement("div");
-      div.className = "day";
-      div.innerText = i;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      div.onclick = () => {
-        selectedDate = dateStr;
-        document.querySelectorAll(".day").forEach(d => d.classList.remove("selected"));
-        div.classList.add("selected");
-        loadSlots();
-      };
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;
 
-      calendarGrid.appendChild(div);
-    }
-  }
+    const div = document.createElement("div");
+    div.className = "day";
+    div.innerText = i;
 
-  async function loadSlots() {
-    slotsDiv.innerHTML = "";
+    div.onclick = () => {
+      selectedDate = dateStr;
+      document.querySelectorAll(".day").forEach(d => d.classList.remove("selected"));
+      div.classList.add("selected");
+      loadSlots();
+    };
 
-    const snapshot = await db.collection("availability")
-      .where("date", "==", selectedDate)
-      .get();
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-
-      const btn = document.createElement("button");
-      btn.innerText = data.time;
-
-      if (data.taken) {
-        btn.disabled = true;
-        btn.innerText += " (Booked)";
-      } else {
-        btn.onclick = async () => {
-          const name = document.getElementById("name").value;
-          const artist = document.getElementById("artist").value;
-
-          if (!name) return alert("Enter name");
-
-          await db.collection("bookings").add({
-            name, artist, date: selectedDate, time: data.time
-          });
-
-          await db.collection("availability").doc(doc.id).update({
-            taken: true
-          });
-
-          alert("Booked! Please confirm via email.");
-
-window.location.href = `mailto:oekkojmo@gmail.com?subject=Tattoo Booking&body=Name: ${name}%0D%0ADate: ${selectedDate}%0D%0ATime: ${data.time}`;
-        };
-      }
-
-      slotsDiv.appendChild(btn);
-    });
-  }
-  @media (max-width: 600px) {
-  input, select {
-    width: 95%;
-  }
-
-  #calendar {
-    padding: 10px;
-  }
-
-  button {
-    width: 100%;
+    calendarGrid.appendChild(div);
   }
 }
 
-  generateCalendar();
-</script>
+// Load slots
+async function loadSlots() {
+  slotsDiv.innerHTML = "";
 
-  // Flash toggle
-  const flashSaleActive = true;
-  if (flashSaleActive) {
-    document.getElementById("flash-sale").style.display = "block";
+  const snapshot = await db.collection("availability")
+    .where("date", "==", selectedDate)
+    .get();
+
+  if (snapshot.empty) {
+    slotsDiv.innerHTML = "<p>No available times</p>";
+    return;
   }
+
+  let slots = [];
+  snapshot.forEach(doc => {
+    slots.push({ id: doc.id, ...doc.data() });
+  });
+
+  slots.sort((a,b)=>a.time.localeCompare(b.time));
+
+  slots.forEach((data, index) => {
+    const btn = document.createElement("button");
+    btn.innerText = data.time;
+
+    if (data.taken) {
+      btn.disabled = true;
+      btn.innerText += " (Booked)";
+    } else {
+      btn.onclick = async () => {
+        const name = document.getElementById("name").value;
+        const artist = document.getElementById("artist").value;
+        const duration = parseInt(document.getElementById("duration").value);
+
+        if (!name) return alert("Enter name");
+
+        const required = slots.slice(index, index + duration);
+
+        if (required.length < duration || required.some(s => s.taken)) {
+          return alert("Not enough time available");
+        }
+
+        await db.collection("bookings").add({
+          name, artist, date: selectedDate, time: data.time, duration
+        });
+
+        for (const slot of required) {
+          await db.collection("availability").doc(slot.id).update({ taken: true });
+        }
+
+        alert("Booked!");
+
+        window.location.href = `mailto:oekkojmo@gmail.com?subject=Tattoo Booking&body=Name:${name}%0D%0ADate:${selectedDate}%0D%0ATime:${data.time}%0D%0ADuration:${duration}hr`;
+
+        loadSlots();
+      };
+    }
+
+    slotsDiv.appendChild(btn);
+  });
+}
+
+// Admin
+function adminMode() {
+  const pass = prompt("Enter admin password");
+  if (pass !== "zigg123") return alert("Wrong password");
+
+  const date = prompt("Date (YYYY-MM-DD)");
+  const time = prompt("Time (e.g. 2:00)");
+
+  db.collection("availability").add({
+    date, time, taken: false
+  });
+
+  alert("Slot added!");
+}
+
+generateCalendar();
+
+// Flash toggle
+document.getElementById("flash-sale").style.display = "block";
 </script>
 
 </body>
